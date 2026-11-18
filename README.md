@@ -2,6 +2,8 @@
 
 A Laravel, Vue and Inertia app where signed-in users generate images through the [Pixelforge API](https://pixelforge.promptedit.dev/docs) and are charged Pixelforge's cost plus 25%. Built as the take-home assessment for the Senior Product Engineer role at PromptEdit.
 
+**Live:** https://pixelforge-studio-production-mwz8mf.laravel.cloud
+
 - **Generate**: prompt, size, quality and optional reference images, with the price shown before submitting.
 - **Pricing**: an estimate up front, the exact cost recorded when the image is done, nothing for a failure.
 - **History**: every generation with live status, estimated and actual cost, and the image.
