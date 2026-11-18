@@ -63,4 +63,34 @@ class User extends Authenticatable implements PasskeyUser
     {
         return $this->hasMany(LedgerEntry::class);
     }
+
+    /**
+     * The user's credit in nanodollars: everything they bought, minus
+     * everything they were charged.
+     *
+     * It is always added up from the ledger. There is no stored balance
+     * that could drift out of step with the entries behind it.
+     */
+    public function creditBalanceNanos(): int
+    {
+        return (int) $this->ledgerEntries()->sum('amount_nanos');
+    }
+
+    /**
+     * Credit set aside for generations that are still on their way: the most
+     * each of them could cost. It is released the moment a generation
+     * finishes, when the real charge (or none, if it failed) takes its place.
+     */
+    public function reservedCreditNanos(): int
+    {
+        return (int) $this->generations()->inFlight()->sum('max_charge_nanos');
+    }
+
+    /**
+     * What the user can still spend: their balance, less what is set aside.
+     */
+    public function availableCreditNanos(): int
+    {
+        return $this->creditBalanceNanos() - $this->reservedCreditNanos();
+    }
 }

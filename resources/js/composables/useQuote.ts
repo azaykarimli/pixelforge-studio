@@ -60,5 +60,6 @@ export function useQuote(input: () => QuoteInput) {
         quote,
         unavailable,
         loading: computed(() => request.processing),
+        refresh,
     };
 }

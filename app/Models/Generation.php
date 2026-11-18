@@ -88,6 +88,19 @@ class Generation extends Model
     }
 
     /**
+     * Generations that are still on their way: requested, but neither
+     * succeeded nor failed yet. Each holds back the most it could cost
+     * from its owner's available credit.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function inFlight(Builder $query): void
+    {
+        $query->whereIn('status', [GenerationStatus::Pending, GenerationStatus::Queued, GenerationStatus::Processing]);
+    }
+
+    /**
      * Generations Pixelforge has accepted but not finished. Each one takes up
      * one of the few slots Pixelforge gives our account.
      *

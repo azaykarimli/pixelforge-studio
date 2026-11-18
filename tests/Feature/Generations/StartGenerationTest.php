@@ -23,7 +23,7 @@ class StartGenerationTest extends TestCase
         Queue::fake();
         $this->fakePixelforge();
 
-        $user = User::factory()->create();
+        $user = User::factory()->withCredit()->create();
 
         $generation = app(StartGeneration::class)(
             $user,
@@ -51,7 +51,7 @@ class StartGenerationTest extends TestCase
         $this->fakePixelforge();
 
         $generation = app(StartGeneration::class)(
-            User::factory()->create(),
+            User::factory()->withCredit()->create(),
             prompt: str_repeat('a', 80),
             size: ImageSize::Square,
             quality: ImageQuality::Medium,

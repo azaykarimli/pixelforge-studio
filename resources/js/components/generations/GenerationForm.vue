@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { useForm } from '@inertiajs/vue3';
+import { useForm, usePage } from '@inertiajs/vue3';
 import { ImagePlus, Sparkles, X } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
+import BuyCreditsDialog from '@/components/credits/BuyCreditsDialog.vue';
 import CostEstimate from '@/components/generations/CostEstimate.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { useQuote } from '@/composables/useQuote';
 import { qualityLabels, sizeLabels } from '@/lib/generations';
+import { formatBalance, formatCost } from '@/lib/money';
 import { store } from '@/routes/generations';
 import type { Generation, ImageQuality, ImageSize } from '@/types';
 
@@ -42,12 +44,21 @@ const form = useForm({
     reference_images: [] as string[],
 });
 
-const { quote, unavailable, loading } = useQuote(() => ({
+const { quote, unavailable, loading, refresh } = useQuote(() => ({
     prompt: form.prompt,
     size: form.size,
     quality: form.quality,
     reference_images: form.reference_images,
 }));
+
+// The quote also says whether the user can afford the image. Buying credits,
+// or a generation finishing, changes that without the form changing.
+const page = usePage();
+watch(() => page.props.credits?.available, refresh);
+
+const tooExpensive = computed(
+    () => quote.value !== null && !quote.value.affordable,
+);
 
 // Counted the way the server and Pixelforge count: in Unicode characters, so
 // an emoji is one, after the surrounding whitespace has been trimmed.
@@ -59,13 +70,18 @@ const canSubmit = computed(
         promptLength.value > 0 &&
         !promptTooLong.value &&
         !unavailable.value &&
+        !tooExpensive.value &&
         !form.processing,
 );
 
+// Errors the server reports under keys that aren't fields of the form itself:
+// one per reference image, and one for not having enough credit.
+const serverErrors = computed(
+    () => form.errors as Record<string, string | undefined>,
+);
+
 function referenceImageError(index: number): string | undefined {
-    return (form.errors as Record<string, string | undefined>)[
-        `reference_images.${index}`
-    ];
+    return serverErrors.value[`reference_images.${index}`];
 }
 
 function submit(): void {
@@ -246,6 +262,27 @@ defineExpose({ reuse });
             :loading="loading"
             :unavailable="unavailable"
         />
+
+        <div
+            v-if="quote && tooExpensive"
+            class="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-100"
+            data-test="insufficient-credit"
+        >
+            <p class="font-medium">
+                You don't have enough credit for this image
+            </p>
+            <p class="mt-1 text-xs">
+                It could cost up to {{ formatCost(quote.max) }}, and you have
+                {{ formatBalance(quote.available) }} available. The most an
+                image could cost is set aside until it's done.
+            </p>
+            <BuyCreditsDialog>
+                <Button type="button" size="sm" class="mt-3">
+                    Buy credits
+                </Button>
+            </BuyCreditsDialog>
+        </div>
+        <InputError :message="serverErrors.credits" />
 
         <Button
             type="submit"

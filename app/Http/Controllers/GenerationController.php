@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\StartGeneration;
+use App\Billing\InsufficientCredit;
 use App\Enums\ImageQuality;
 use App\Enums\ImageSize;
 use App\Http\Requests\StoreGenerationRequest;
@@ -44,6 +45,10 @@ class GenerationController extends Controller
                 quality: ImageQuality::from($request->validated('quality')),
                 referenceImages: $request->validated('reference_images', []),
             );
+        } catch (InsufficientCredit) {
+            throw ValidationException::withMessages([
+                'credits' => 'You don\'t have enough credit for this image. Buy credits and try again.',
+            ]);
         } catch (PixelforgeException) {
             // Without current prices we can't say what this would cost,
             // so nothing is submitted rather than submitted unpriced.

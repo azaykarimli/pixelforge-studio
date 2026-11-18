@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Sparkles } from '@lucide/vue';
+import { BookOpen, Sparkles, Wallet } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -14,6 +14,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { index as credits } from '@/routes/credits';
 import { index as studio } from '@/routes/generations';
 import type { NavItem } from '@/types';
 
@@ -22,6 +23,11 @@ const mainNavItems: NavItem[] = [
         title: 'Studio',
         href: studio(),
         icon: Sparkles,
+    },
+    {
+        title: 'Credits',
+        href: credits(),
+        icon: Wallet,
     },
 ];
 

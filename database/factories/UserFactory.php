@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Billing\Money;
+use App\Enums\LedgerEntryType;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -56,5 +58,17 @@ class UserFactory extends Factory
             'two_factor_recovery_codes' => encrypt(json_encode(['recovery-code-1'])),
             'two_factor_confirmed_at' => now(),
         ]);
+    }
+
+    /**
+     * Give the user credit to spend, as if they had bought it. The amount is
+     * in nanodollars and defaults to ten dollars.
+     */
+    public function withCredit(int $nanos = 10 * Money::NANOS_PER_DOLLAR): static
+    {
+        return $this->afterCreating(fn (User $user) => $user->ledgerEntries()->create([
+            'type' => LedgerEntryType::Purchase,
+            'amount_nanos' => $nanos,
+        ]));
     }
 }

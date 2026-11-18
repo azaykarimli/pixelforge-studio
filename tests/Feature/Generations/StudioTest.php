@@ -75,7 +75,7 @@ class StudioTest extends TestCase
         Queue::fake();
         $this->fakePixelforge();
 
-        $user = User::factory()->create();
+        $user = User::factory()->withCredit()->create();
 
         $this->actingAs($user)
             ->post(route('generations.store'), [
@@ -179,7 +179,7 @@ class StudioTest extends TestCase
             'reference_images' => ['https://example.com/a.png', 'https://example.com/b.png'],
         ];
 
-        $user = User::factory()->create();
+        $user = User::factory()->withCredit()->create();
 
         $quote = $this->actingAs($user)->postJson(route('generations.quote'), $input)->assertOk()->json();
         $this->actingAs($user)->post(route('generations.store'), $input)->assertSessionHasNoErrors();

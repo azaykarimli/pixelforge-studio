@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { Head, Link, usePoll } from '@inertiajs/vue3';
-import { ChevronLeft, ChevronRight, Images } from '@lucide/vue';
+import { Head, usePoll } from '@inertiajs/vue3';
+import { Images } from '@lucide/vue';
 import { computed, onMounted, ref, useTemplateRef, watch } from 'vue';
 import GenerationCard from '@/components/generations/GenerationCard.vue';
 import GenerationDialog from '@/components/generations/GenerationDialog.vue';
 import GenerationForm from '@/components/generations/GenerationForm.vue';
-import { Button } from '@/components/ui/button';
+import Pagination from '@/components/Pagination.vue';
 import { Spinner } from '@/components/ui/spinner';
 import { isFinished } from '@/lib/generations';
 import { index } from '@/routes/generations';
@@ -46,16 +46,16 @@ function reuse(generation: Generation): void {
     formSection.value?.scrollIntoView({ behavior: 'smooth' });
 }
 
-// Live status. While anything on this page is still on its way, the list is
-// fetched again every two seconds. That only reads our own database: news
-// from Pixelforge reaches us through webhooks, not through this.
+// Live status. While anything on this page is still on its way, the list and
+// the user's credit are fetched again every two seconds. That only reads our
+// own database: news from Pixelforge reaches us through webhooks, not this.
 const waiting = computed(() =>
     props.generations.data.some((generation) => !isFinished(generation)),
 );
 
 const { start, stop } = usePoll(
     2000,
-    { only: ['generations'] },
+    { only: ['generations', 'credits'] },
     { autoStart: false },
 );
 
@@ -120,42 +120,7 @@ onMounted(() => {
                 />
             </div>
 
-            <nav
-                v-if="generations.meta.last_page > 1"
-                class="mt-6 flex items-center justify-between gap-4"
-                aria-label="Pages of images"
-            >
-                <Button
-                    v-if="generations.links.prev"
-                    variant="outline"
-                    size="sm"
-                    as-child
-                >
-                    <Link :href="generations.links.prev">
-                        <ChevronLeft />
-                        Newer
-                    </Link>
-                </Button>
-                <span v-else />
-
-                <span class="text-xs text-muted-foreground">
-                    Page {{ generations.meta.current_page }} of
-                    {{ generations.meta.last_page }}
-                </span>
-
-                <Button
-                    v-if="generations.links.next"
-                    variant="outline"
-                    size="sm"
-                    as-child
-                >
-                    <Link :href="generations.links.next">
-                        Older
-                        <ChevronRight />
-                    </Link>
-                </Button>
-                <span v-else />
-            </nav>
+            <Pagination class="mt-6" :page="generations" />
         </section>
     </div>
 

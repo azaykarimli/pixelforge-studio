@@ -46,6 +46,9 @@ export type Quote = {
     estimated: Money;
     min: Money;
     max: Money;
+    // Whether the user's available credit covers the most this could cost.
+    available: Money;
+    affordable: boolean;
     lines: Record<
         CostLineKey,
         { tokens: Estimate<number>; charge: Estimate<Money> }

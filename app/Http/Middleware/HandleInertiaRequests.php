@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Billing\Money;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -41,7 +43,32 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'credits' => fn () => $this->credits($request->user()),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+        ];
+    }
+
+    /**
+     * The signed-in user's credit, shown in the header of every page: what
+     * they have, how much of it is set aside for generations in progress,
+     * and what that leaves them to spend.
+     *
+     * @return array{balance: string, reserved: string, available: string, packs: list<int>}|null
+     */
+    private function credits(?User $user): ?array
+    {
+        if ($user === null) {
+            return null;
+        }
+
+        $balance = $user->creditBalanceNanos();
+        $reserved = $user->reservedCreditNanos();
+
+        return [
+            'balance' => Money::format($balance),
+            'reserved' => Money::format($reserved),
+            'available' => Money::format($balance - $reserved),
+            'packs' => config('billing.credit_packs'),
         ];
     }
 }
