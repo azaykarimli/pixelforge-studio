@@ -80,3 +80,11 @@ export function formatBalance(amount: Money): string {
 export function formatExact(amount: Money): string {
     return render(toNanos(amount), 9);
 }
+
+/**
+ * All nine decimals, the way Pixelforge writes money. For the admin report,
+ * where figures are compared digit for digit.
+ */
+export function formatFull(amount: Money): string {
+    return amount.startsWith('-') ? `-$${amount.slice(1)}` : `$${amount}`;
+}

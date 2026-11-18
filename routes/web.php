@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\SpendReportController;
 use App\Http\Controllers\CreditController;
 use App\Http\Controllers\GenerationController;
 use App\Http\Controllers\QuoteController;
@@ -23,6 +24,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('credits', [CreditController::class, 'store'])
         ->middleware('throttle:30,1')
         ->name('credits.store');
+
+    Route::get('admin/spend', SpendReportController::class)
+        ->middleware('can:view-spend-report')
+        ->name('admin.spend');
 });
 
 require __DIR__.'/settings.php';

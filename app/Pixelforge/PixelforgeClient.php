@@ -2,9 +2,12 @@
 
 namespace App\Pixelforge;
 
+use App\Billing\Money;
 use App\Models\Generation;
 use App\Pixelforge\Data\Pricing;
 use App\Pixelforge\Data\ProviderGeneration;
+use App\Pixelforge\Data\UsageDay;
+use Carbon\CarbonInterface;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
@@ -55,6 +58,31 @@ final class PixelforgeClient
     public function getGeneration(string $providerId): ProviderGeneration
     {
         return ProviderGeneration::fromApi($this->send('GET', "generations/{$providerId}")->json());
+    }
+
+    /**
+     * What Pixelforge billed this API key on each UTC day in a range (both
+     * ends included, 92 days at most). This is Pixelforge's own record of
+     * our costs, and the one ours has to agree with.
+     *
+     * @return array<string, UsageDay> Keyed by date, "2026-11-04".
+     *
+     * @throws PixelforgeException
+     */
+    public function usage(CarbonInterface $from, CarbonInterface $to): array
+    {
+        $response = $this->send('GET', 'usage', [
+            'start_date' => $from->toDateString(),
+            'end_date' => $to->toDateString(),
+        ]);
+
+        $days = [];
+
+        foreach ($response->json('data') as $day) {
+            $days[$day['date']] = new UsageDay($day['date'], $day['generations'], Money::parse($day['cost_usd']));
+        }
+
+        return $days;
     }
 
     /**
