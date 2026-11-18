@@ -2,7 +2,9 @@
 
 namespace App\Pixelforge;
 
+use App\Models\Generation;
 use App\Pixelforge\Data\Pricing;
+use App\Pixelforge\Data\ProviderGeneration;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
@@ -16,6 +18,45 @@ use Illuminate\Support\Facades\Http;
  */
 final class PixelforgeClient
 {
+    /**
+     * Ask Pixelforge to start a generation. It answers straight away with
+     * the generation in the "queued" status; the result comes later.
+     *
+     * @throws PixelforgeException
+     */
+    public function createGeneration(Generation $generation): ProviderGeneration
+    {
+        $parameters = [
+            'prompt' => $generation->prompt,
+            'size' => $generation->size->value,
+            'quality' => $generation->quality->value,
+            // Pixelforge echoes metadata back on every webhook. Sending our
+            // own id lets us match an event to its row even when the event
+            // arrives before this very request has returned.
+            'metadata' => ['generation_id' => $generation->id],
+        ];
+
+        if ($generation->reference_images !== []) {
+            $parameters['reference_images'] = $generation->reference_images;
+        }
+
+        $response = $this->send('POST', 'generations', $parameters, headers: [
+            // The same key on every attempt: however often this request is
+            // retried, Pixelforge creates (and bills) one generation at most.
+            'Idempotency-Key' => $generation->id,
+        ]);
+
+        return ProviderGeneration::fromApi($response->json());
+    }
+
+    /**
+     * @throws PixelforgeException
+     */
+    public function getGeneration(string $providerId): ProviderGeneration
+    {
+        return ProviderGeneration::fromApi($this->send('GET', "generations/{$providerId}")->json());
+    }
+
     /**
      * The current rates and the rules for counting tokens.
      *

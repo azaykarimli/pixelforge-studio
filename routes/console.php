@@ -1,8 +1,7 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+// Webhook delivery isn't guaranteed, so once a minute look up any generation
+// that Pixelforge has gone quiet about.
+Schedule::command('pixelforge:sync')->everyMinute()->withoutOverlapping();
