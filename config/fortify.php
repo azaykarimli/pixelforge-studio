@@ -163,7 +163,8 @@ return [
     'features' => [
         Features::registration(),
         Features::resetPasswords(),
-        Features::emailVerification(),
+        // Email verification is off: this demo has no mailer, so a new
+        // account could never confirm its address and would be locked out.
         Features::twoFactorAuthentication([
             'confirm' => true,
             'confirmPassword' => true,

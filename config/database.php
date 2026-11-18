@@ -38,10 +38,14 @@ return [
             'database' => env('DB_DATABASE', database_path('database.sqlite')),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
-            'busy_timeout' => null,
-            'journal_mode' => null,
-            'synchronous' => null,
-            'transaction_mode' => 'DEFERRED',
+            // The web server, queue worker and scheduler all write to this file.
+            // WAL lets readers work alongside a writer, the busy timeout makes a
+            // second writer wait instead of failing, and IMMEDIATE transactions
+            // take the write lock up front so they can't deadlock on upgrade.
+            'busy_timeout' => 5000,
+            'journal_mode' => 'wal',
+            'synchronous' => 'normal',
+            'transaction_mode' => 'IMMEDIATE',
         ],
 
         'mysql' => [
