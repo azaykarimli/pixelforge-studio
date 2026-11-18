@@ -10,6 +10,7 @@ use App\Pixelforge\PixelforgeClient;
 use App\Pixelforge\PixelforgeException;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class SyncGenerations extends Command
 {
@@ -53,6 +54,10 @@ class SyncGenerations extends Command
                 // Pixelforge is limiting or unreachable. Leave the rest for
                 // the next run instead of piling on more requests.
                 break;
+            } catch (Throwable $exception) {
+                // One generation we can't make sense of must not stop the
+                // others from being caught up. Report it and move on.
+                report($exception);
             }
         }
 

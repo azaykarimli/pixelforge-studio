@@ -25,6 +25,11 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // In production the app sits behind the host's load balancer.
+        // Trusting its forwarded headers lets Laravel see that the visitor
+        // came over HTTPS, so the links it generates are https:// too.
+        $middleware->trustProxies(at: '*');
+
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         $middleware->web(append: [
