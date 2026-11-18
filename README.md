@@ -68,7 +68,7 @@ News about a generation reaches the app three ways: the response to the create r
 
 **The unit is the nanodollar.** All money is a whole number of nanodollars (10⁻⁹ USD) in `bigint` columns. That is the precision Pixelforge bills in (`"0.046125000"`), so its costs fit exactly. Nothing is ever a float and nothing is rounded to cents. Amounts become decimal strings only at the edges: reading Pixelforge's JSON, and sending numbers to the browser ([`Money`](app/Billing/Money.php)).
 
-**Actual cost.** Pixelforge returns token counts, never a price. When a generation succeeds, its cost is each token count times the rate *on that generation* (fixed when it was created), and the user is charged that plus the markup ([`CostCalculator`](app/Billing/CostCalculator.php)). `"12.50"` per million tokens is exactly 12,500 n$ per token; a rate too fine to bill exactly is refused rather than rounded. The markup (2500 basis points) is copied onto each generation when it is requested. If cost × 1.25 were ever not a whole nanodollar it would round up; at today's rates it is always whole.
+**Actual cost.** Pixelforge returns token counts, never a price. When a generation succeeds, its cost is each token count times the rate _on that generation_ (fixed when it was created), and the user is charged that plus the markup ([`CostCalculator`](app/Billing/CostCalculator.php)). `"12.50"` per million tokens is exactly 12,500 n$ per token; a rate too fine to bill exactly is refused rather than rounded. The markup (2500 basis points) is copied onto each generation when it is requested. If cost × 1.25 were ever not a whole nanodollar it would round up; at today's rates it is always whole.
 
 **Estimate.** Before submitting, the form shows the expected charge and the least and most it could be ([`QuoteCalculator`](app/Billing/QuoteCalculator.php)). Rates and token rules come from `GET /v1/pricing`, cached for a minute, never hardcoded. Output and reference-image tokens are exact; prompt tokens are `ceil(characters / 4)` give or take 15%; reasoning tokens are only known afterwards, so the estimate takes the middle of the documented range. The quote is computed on the server by the same code that prices the submission, so the number shown is the number recorded.
 
@@ -80,24 +80,24 @@ News about a generation reaches the app three ways: the response to the create r
 
 ## What Pixelforge does, and what the app does about it
 
-| Pixelforge | The app |
-|---|---|
-| A webhook can arrive before the create request returns | The row is saved before the request is sent, and events are matched by `metadata.generation_id`, our own id, which we know from the start |
-| The same event is delivered twice | The event id is the primary key of `webhook_events`. A repeat finds the row and stops; only a delivery counter changes |
-| Events arrive out of order | Statuses only move forward; `succeeded` and `failed` are final |
-| A webhook never arrives | A scheduled sweep fetches anything quiet for 45 seconds |
-| Anyone can POST to the webhook URL | HMAC-SHA256 over `timestamp.rawBody`, compared in constant time, rejected if older than 5 minutes |
-| At most 3 generations at once | The submit job counts ours first and waits without calling. A `429` means wait for `Retry-After`. Waiting is not a failure; there is a 15-minute deadline |
-| 60 requests a minute | `Retry-After` is honoured. The page's polling never calls Pixelforge |
-| `503 overloaded`, timeouts | Retried with the same idempotency key, backing off (2 s, 4 s, 8 s, never less than `Retry-After`), then given up on: failed, free |
-| Rejected prompt, daily limit, bad request | No retry. Failed at once, with a plain explanation |
-| Fails after accepting | Marked failed with the reason. No charge, the hold is released |
-| Prices change | Estimates follow `GET /v1/pricing`; actual costs use the rates on the generation |
-| Image links expire after 24 hours | An "expired" placeholder instead of a broken image |
+| Pixelforge                                             | The app                                                                                                                                                   |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A webhook can arrive before the create request returns | The row is saved before the request is sent, and events are matched by `metadata.generation_id`, our own id, which we know from the start                 |
+| The same event is delivered twice                      | The event id is the primary key of `webhook_events`. A repeat finds the row and stops; only a delivery counter changes                                    |
+| Events arrive out of order                             | Statuses only move forward; `succeeded` and `failed` are final                                                                                            |
+| A webhook never arrives                                | A scheduled sweep fetches anything quiet for 45 seconds                                                                                                   |
+| Anyone can POST to the webhook URL                     | HMAC-SHA256 over `timestamp.rawBody`, compared in constant time, rejected if older than 5 minutes                                                         |
+| At most 3 generations at once                          | The submit job counts ours first and waits without calling. A `429` means wait for `Retry-After`. Waiting is not a failure; there is a 15-minute deadline |
+| 60 requests a minute                                   | `Retry-After` is honoured. The page's polling never calls Pixelforge                                                                                      |
+| `503 overloaded`, timeouts                             | Retried with the same idempotency key, backing off (2 s, 4 s, 8 s, never less than `Retry-After`), then given up on: failed, free                         |
+| Rejected prompt, daily limit, bad request              | No retry. Failed at once, with a plain explanation                                                                                                        |
+| Fails after accepting                                  | Marked failed with the reason. No charge, the hold is released                                                                                            |
+| Prices change                                          | Estimates follow `GET /v1/pricing`; actual costs use the rates on the generation                                                                          |
+| Image links expire after 24 hours                      | An "expired" placeholder instead of a broken image                                                                                                        |
 
 ## Decisions where the brief left room
 
-- **Fractions of a cent are kept, not rounded.** The cheapest image costs us 1.12¢ and should cost the user 1.4¢. Rounded up to a whole cent it would cost them 2¢: a 79% markup instead of 25%. Storing exact amounts means provider cost matches Pixelforge to the last digit and the markup is exactly what it claims to be.
+- **Fractions of a cent are kept, not rounded.** A low-quality image can cost us as little as 1.12¢, which should cost the user 1.4¢. Rounded up to a whole cent it would cost them 2¢: a 79% markup instead of 25%. Storing exact amounts means provider cost matches Pixelforge to the last digit and the markup is exactly what it claims to be.
 - **Always charge the actual cost**, even if it lands above the estimate. The estimate is information; the price is cost plus 25%. It also stays right if Pixelforge changes its rates between the quote and the generation.
 - **Set aside the maximum, not the estimate.** With only the estimate held, an unlucky run of reasoning tokens could take a balance below zero.
 - **Webhooks are handled in the request, not on the queue.** Applying an event is one short transaction with no outside calls. Recording the event and applying it share that transaction: if applying fails, the record rolls back and Pixelforge's own retry delivers it again. A 2xx means it really was applied.
@@ -111,16 +111,16 @@ News about a generation reaches the app three ways: the response to the create r
 
 ## Where things are
 
-| Path | What is there |
-|---|---|
-| [`app/Pixelforge/`](app/Pixelforge) | The API client, its error type, webhook signature check, and typed copies of Pixelforge's objects |
-| [`app/Billing/`](app/Billing) | Money, cost and quote arithmetic. No framework, no database |
-| [`app/Actions/`](app/Actions) | `StartGeneration`, `ApplyProviderSnapshot`, `FailGeneration`, `HandleWebhookEvent` |
-| [`app/Jobs/SubmitGeneration.php`](app/Jobs/SubmitGeneration.php) | Sends a generation to Pixelforge: waiting, retrying, giving up |
-| [`app/Console/Commands/SyncGenerations.php`](app/Console/Commands/SyncGenerations.php) | The once-a-minute sweep |
-| [`app/Reports/SpendReport.php`](app/Reports/SpendReport.php) | The admin report and its comparison with Pixelforge |
-| [`resources/js/pages/`](resources/js/pages) | The studio, the credits statement and the admin report |
-| [`tests/`](tests) | Unit tests pinned to the worked examples in the Pixelforge docs, and feature tests for the lifecycle, webhooks, credits and the report |
+| Path                                                                                   | What is there                                                                                                                          |
+| -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| [`app/Pixelforge/`](app/Pixelforge)                                                    | The API client, its error type, webhook signature check, and typed copies of Pixelforge's objects                                      |
+| [`app/Billing/`](app/Billing)                                                          | Money, cost and quote arithmetic                                                                                                       |
+| [`app/Actions/`](app/Actions)                                                          | `StartGeneration`, `ApplyProviderSnapshot`, `FailGeneration`, `HandleWebhookEvent`                                                     |
+| [`app/Jobs/SubmitGeneration.php`](app/Jobs/SubmitGeneration.php)                       | Sends a generation to Pixelforge: waiting, retrying, giving up                                                                         |
+| [`app/Console/Commands/SyncGenerations.php`](app/Console/Commands/SyncGenerations.php) | The once-a-minute sweep                                                                                                                |
+| [`app/Reports/SpendReport.php`](app/Reports/SpendReport.php)                           | The admin report and its comparison with Pixelforge                                                                                    |
+| [`resources/js/pages/`](resources/js/pages)                                            | The studio, the credits statement and the admin report                                                                                 |
+| [`tests/`](tests)                                                                      | Unit tests pinned to the worked examples in the Pixelforge docs, and feature tests for the lifecycle, webhooks, credits and the report |
 
 ## Deploying
 
