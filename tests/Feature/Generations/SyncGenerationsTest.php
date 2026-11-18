@@ -87,6 +87,25 @@ class SyncGenerationsTest extends TestCase
         $this->assertSame(GenerationStatus::Processing, $second->refresh()->status);
     }
 
+    public function test_an_error_about_one_generation_does_not_stop_the_others_being_checked(): void
+    {
+        [$unknown, $fine] = Generation::factory()->processing()->count(2)->create();
+
+        $this->fakePixelforge([
+            "*/v1/generations/{$unknown->provider_id}" => Http::response([
+                'error' => ['type' => 'invalid_request_error', 'code' => 'not_found', 'message' => 'No such generation.'],
+            ], 404),
+            "*/v1/generations/{$fine->provider_id}" => Http::response($this->providerGeneration($fine, 'succeeded')),
+        ]);
+
+        $this->travel(2)->minutes();
+        $this->artisan('pixelforge:sync')->assertSuccessful();
+
+        Http::assertSentCount(2);
+        $this->assertSame(GenerationStatus::Processing, $unknown->refresh()->status);
+        $this->assertSame(GenerationStatus::Succeeded, $fine->refresh()->status);
+    }
+
     public function test_one_generation_that_cannot_be_applied_does_not_hold_up_the_others(): void
     {
         [$broken, $fine] = Generation::factory()->processing()->count(2)->create();

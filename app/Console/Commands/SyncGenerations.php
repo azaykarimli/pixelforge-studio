@@ -51,9 +51,12 @@ class SyncGenerations extends Command
                     'message' => $exception->getMessage(),
                 ]);
 
-                // Pixelforge is limiting or unreachable. Leave the rest for
-                // the next run instead of piling on more requests.
-                break;
+                // If Pixelforge is limiting us or having trouble, leave the
+                // rest for the next run instead of piling on more requests.
+                // Any other error is about this one generation only.
+                if ($exception->isCapacityLimit() || $exception->isTransient()) {
+                    break;
+                }
             } catch (Throwable $exception) {
                 // One generation we can't make sense of must not stop the
                 // others from being caught up. Report it and move on.

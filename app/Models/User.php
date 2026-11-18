@@ -104,6 +104,12 @@ class User extends Authenticatable implements PasskeyUser
      */
     public function availableCreditNanos(): int
     {
-        return $this->creditBalanceNanos() - $this->reservedCreditNanos();
+        // What is set aside is read first, on purpose. A generation can finish
+        // between the two reads; it is then counted twice (still set aside,
+        // and already charged), which only makes this number too cautious.
+        // Read the other way round, it could briefly be counted in neither.
+        $reserved = $this->reservedCreditNanos();
+
+        return $this->creditBalanceNanos() - $reserved;
     }
 }

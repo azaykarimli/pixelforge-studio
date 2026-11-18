@@ -61,8 +61,9 @@ class HandleInertiaRequests extends Middleware
             return null;
         }
 
-        $balance = $user->creditBalanceNanos();
+        // Set-aside first, then balance: see User::availableCreditNanos().
         $reserved = $user->reservedCreditNanos();
+        $balance = $user->creditBalanceNanos();
 
         return [
             'balance' => Money::format($balance),

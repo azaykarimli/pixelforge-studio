@@ -51,6 +51,8 @@ final readonly class ProviderGeneration
 
     private static function time(?string $timestamp): ?CarbonImmutable
     {
-        return $timestamp === null ? null : CarbonImmutable::parse($timestamp);
+        // Pixelforge sends UTC. Converting anyway means a timestamp with an
+        // offset could never be stored as if its local time were UTC.
+        return $timestamp === null ? null : CarbonImmutable::parse($timestamp)->utc();
     }
 }

@@ -206,6 +206,16 @@ class ApplyProviderSnapshotTest extends TestCase
         $this->assertSame(0, LedgerEntry::query()->count());
     }
 
+    public function test_pixelforges_timestamps_are_stored_as_utc_whatever_offset_they_arrive_with(): void
+    {
+        $generation = Generation::factory()->processing()->create();
+
+        // 01:30 on the 5th at +02:00 is 23:30 on the 4th in UTC, the day Pixelforge bills it on.
+        $this->apply($generation, 'succeeded', ['completed_at' => '2026-11-05T01:30:00+02:00']);
+
+        $this->assertSame('2026-11-04 23:30:00', $generation->refresh()->getRawOriginal('completed_at'));
+    }
+
     public function test_costs_are_still_recorded_after_the_user_deleted_their_account(): void
     {
         $generation = Generation::factory()->processing()->create();
